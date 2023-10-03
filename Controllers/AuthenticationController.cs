@@ -78,7 +78,9 @@ namespace ReportApi.Controllers
 
             var claimSeries = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier,user.name!)
+                new Claim(ClaimTypes.NameIdentifier,user.name!),
+                new Claim("USERIDCLAIM",user.Id.ToString()),
+                new Claim(ClaimTypes.Role,"roleVatandas")
             };
             var token = new JwtSecurityToken(claims:claimSeries,expires: DateTime.Now.AddMinutes(30),signingCredentials: credentials);
 

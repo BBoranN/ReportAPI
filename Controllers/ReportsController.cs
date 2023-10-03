@@ -28,41 +28,56 @@ namespace ReportApi.Controllers
         {
             try
             {
-                var reportList = new List<Report>();
-                connection = new NpgsqlConnection(Constr);
-
-                connection.Open();
-
-                string query = "select title,description,st_x(geom),st_y(geom),Id" +
-                    " from reports where userid=@id;";
-                using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+                if (HttpContext.User.IsInRole("roleVatandas"))
                 {
+                    var idClaim = this.HttpContext.User.Claims.FirstOrDefault((c) => { return c.Type == "USERIDCLAIM"; });
+                    if (idClaim == null)
+                    {
+                        throw new InvalidOperationException("Claim cant be found");
+                    }
+                    var userID = idClaim.Value;
 
-                    command.Parameters.AddWithValue("@id", id);
-                    
-                    using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
+
+                    var reportList = new List<Report>();
+                    connection = new NpgsqlConnection(Constr);
+
+                    connection.Open();
+
+                    string query = "select title,description,st_x(geom),st_y(geom),Id" +
+                        " from reports where userid=@id;";
+                    using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
                     {
 
+                        command.Parameters.AddWithValue("@id", id);
 
-                        while (reader.Read())
+                        using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
                         {
-                            var report = new Report
+
+
+                            while (reader.Read())
                             {
-                                
-                                reportTitle = reader.IsDBNull(0) ? null : reader.GetString(0),
-                                reportDescription = reader.IsDBNull(1) ? null :reader.GetString(1),
-                                x = reader.GetDouble(2),
-                                y = reader.GetDouble(3),
-                                Id = reader.GetInt16(4)
-                            };
+                                var report = new Report
+                                {
 
-                            reportList.Add(report);
+                                    reportTitle = reader.IsDBNull(0) ? null : reader.GetString(0),
+                                    reportDescription = reader.IsDBNull(1) ? null : reader.GetString(1),
+                                    x = reader.GetDouble(2),
+                                    y = reader.GetDouble(3),
+                                    Id = reader.GetInt16(4)
+                                };
+
+                                reportList.Add(report);
+                            }
+
+                            reader.Close();
                         }
-
-                        reader.Close();
                     }
+                    return Ok(reportList);
                 }
-                return Ok(reportList);
+                else
+                {
+                    return BadRequest();
+                }
             }
             catch (Exception ex)
             {
@@ -100,6 +115,15 @@ namespace ReportApi.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "RoleAdmin")]
+        public async Task<IActionResult> ChangeStatus(Report report)
+        {
+
+            return Ok(report);
+            
         }
 
     }
