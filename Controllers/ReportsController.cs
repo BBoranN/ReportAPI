@@ -23,8 +23,7 @@ namespace ReportApi.Controllers
         }
 
         [HttpGet]
-        [Route("{Id:Guid}")]
-        public async Task<ActionResult> GetUserReports([FromRoute] Guid id)
+        public async Task<ActionResult> GetUserReports()
         {
             try
             {
@@ -48,7 +47,7 @@ namespace ReportApi.Controllers
                     using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
                     {
 
-                        command.Parameters.AddWithValue("@id", id);
+                        command.Parameters.AddWithValue("@id", int.Parse(userID));
 
                         using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
                         {
@@ -74,9 +73,45 @@ namespace ReportApi.Controllers
                     }
                     return Ok(reportList);
                 }
+                else if(HttpContext.User.IsInRole("admin"))
+                {
+                    var reportList = new List<Report>();
+                    connection = new NpgsqlConnection(Constr);
+
+                    connection.Open();
+
+                    string query = "select title,description,st_x(geom),st_y(geom),Id" +
+                        " from reports";
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+                    {
+
+                        using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (reader.Read())
+                            {
+                                var report = new Report
+                                {
+
+                                    reportTitle = reader.IsDBNull(0) ? null : reader.GetString(0),
+                                    reportDescription = reader.IsDBNull(1) ? null : reader.GetString(1),
+                                    x = reader.GetDouble(2),
+                                    y = reader.GetDouble(3),
+                                    Id = reader.GetInt16(4)
+                                };
+
+                                reportList.Add(report);
+                            }
+
+                            reader.Close();
+                        }
+                    }
+                    return Ok(reportList);
+
+                }
                 else
                 {
-                    return BadRequest();
+                    return BadRequest("Invalid Role");
                 }
             }
             catch (Exception ex)
@@ -118,6 +153,7 @@ namespace ReportApi.Controllers
         }
 
         [HttpPost]
+        [Route("ChangeStatus")]
         [Authorize(Roles = "RoleAdmin")]
         public async Task<IActionResult> ChangeStatus(Report report)
         {

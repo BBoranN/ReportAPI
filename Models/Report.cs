@@ -4,7 +4,7 @@
     {
         public int? Id { get; set; }
 
-        public Guid? UserId { get; set; }
+        public int? UserId { get; set; }
         public string reportTitle { get; set; }
         public string reportDescription { get; set; }
 

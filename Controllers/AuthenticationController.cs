@@ -54,9 +54,10 @@ namespace ReportApi.Controllers
                 {
                     var user = new User
                     {
-                        Id = reader.GetGuid(0),
+                        Id = reader.GetInt16(0),
                         name = reader.GetString(1),
-                        password = reader.GetString(2)
+                        password = reader.GetString(2),
+                        role = reader.GetString(3)
                     };
                     reader.Close();
 
@@ -80,7 +81,7 @@ namespace ReportApi.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier,user.name!),
                 new Claim("USERIDCLAIM",user.Id.ToString()),
-                new Claim(ClaimTypes.Role,"roleVatandas")
+                new Claim(ClaimTypes.Role,user.role)
             };
             var token = new JwtSecurityToken(claims:claimSeries,expires: DateTime.Now.AddMinutes(30),signingCredentials: credentials);
 
