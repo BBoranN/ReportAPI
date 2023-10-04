@@ -19,7 +19,7 @@ namespace ReportApi.Controllers
         public ReportsController(IOptions<JwtSettings> jwtSettings)
         {
             _jwtSettings = jwtSettings.Value;
-            Constr = "User ID=ApiConnection;Password=password;Server=localhost;Port=5432;Database=ReportApp;Integrated Security=true;Pooling=true; ";
+            Constr = "User ID=postgres;Password=password;Server=localhost;Port=5433;Database=postgres;Integrated Security=true;Pooling=true; ";
         }
 
         [HttpGet]
@@ -84,7 +84,7 @@ namespace ReportApi.Controllers
                 string query = "insert into reports (userid,title,description,geom) values (@userid,@title,@description,st_setsrid( st_makepoint(@x,@y),4326 )) returning id";
                 NpgsqlCommand command = new NpgsqlCommand(query, connection);
 
-                command.Parameters.AddWithValue("@userid", report.UserId);
+                _ = command.Parameters.AddWithValue("@userid", report.UserId);
                 command.Parameters.AddWithValue("@title", report.reportTitle);
                 command.Parameters.AddWithValue("@description", report.reportDescription);
                 command.Parameters.AddWithValue("@x", report.x);
