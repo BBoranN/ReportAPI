@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Update.Internal;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using ReportApi.Models;
@@ -42,7 +43,7 @@ namespace ReportApi.Controllers
 
                     connection.Open();
 
-                    string query = "select title,description,st_x(geom),st_y(geom),Id" +
+                    string query = "select title,description,st_x(geom),st_y(geom),Id,reportstatus" +
                         " from reports where userid=@id;";
                     using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
                     {
@@ -62,7 +63,8 @@ namespace ReportApi.Controllers
                                     reportDescription = reader.IsDBNull(1) ? null : reader.GetString(1),
                                     x = reader.GetDouble(2),
                                     y = reader.GetDouble(3),
-                                    Id = reader.GetInt16(4)
+                                    Id = reader.GetInt16(4),
+                                    status=reader.GetString(5)
                                 };
 
                                 reportList.Add(report);
@@ -80,7 +82,7 @@ namespace ReportApi.Controllers
 
                     connection.Open();
 
-                    string query = "select title,description,st_x(geom),st_y(geom),Id" +
+                    string query = "select title,description,st_x(geom),st_y(geom),Id,reportstatus" +
                         " from reports";
 
                     using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
@@ -97,7 +99,8 @@ namespace ReportApi.Controllers
                                     reportDescription = reader.IsDBNull(1) ? null : reader.GetString(1),
                                     x = reader.GetDouble(2),
                                     y = reader.GetDouble(3),
-                                    Id = reader.GetInt16(4)
+                                    Id = reader.GetInt16(4),
+                                    status=reader.GetString(5)
                                 };
 
                                 reportList.Add(report);
@@ -131,7 +134,7 @@ namespace ReportApi.Controllers
 
                 connection.Open();
 
-                string query = "insert into reports (userid,title,description,geom) values (@userid,@title,@description,st_setsrid( st_makepoint(@x,@y),4326 )) returning id";
+                string query = "insert into reports (userid,title,description,geom,reportstatus) values (@userid,@title,@description,st_setsrid( st_makepoint(@x,@y),4326 ),'Pending') returning id";
                 NpgsqlCommand command = new NpgsqlCommand(query, connection);
 
                 _ = command.Parameters.AddWithValue("@userid", report.UserId);
@@ -157,8 +160,28 @@ namespace ReportApi.Controllers
         [Authorize(Roles = "RoleAdmin")]
         public async Task<IActionResult> ChangeStatus(Report report)
         {
+            try {
 
-            return Ok(report);
+                connection = new NpgsqlConnection(Constr);
+                connection.Open();
+
+                string query = "update reports set status=@newStatus where id=@id";
+
+                NpgsqlCommand command = new NpgsqlCommand(query, connection);
+                command.Parameters.AddWithValue("@id", report.Id);
+                command.Parameters.AddWithValue("@status", report.status);
+
+                object rid = await command.ExecuteScalarAsync();
+
+                report = rid as Report;
+
+                return Ok(report);
+            }catch (Exception ex) { 
+                
+                return BadRequest(ex.Message);
+            
+            }
+            
             
         }
 
