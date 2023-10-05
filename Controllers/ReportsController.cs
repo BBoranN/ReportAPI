@@ -165,7 +165,7 @@ namespace ReportApi.Controllers
                 connection = new NpgsqlConnection(Constr);
                 connection.Open();
 
-                string query = "update reports set status=@newStatus where id=@id";
+                string query = "update reports set reportstatus=@newStatus where id=@id";
 
                 NpgsqlCommand command = new NpgsqlCommand(query, connection);
                 command.Parameters.AddWithValue("@id", report.Id);
