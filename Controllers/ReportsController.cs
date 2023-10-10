@@ -16,11 +16,12 @@ namespace ReportApi.Controllers
 
         private readonly JwtSettings _jwtSettings;
         private string Constr;
-        public NpgsqlConnection connection;
+        
         public ReportsController(IOptions<JwtSettings> jwtSettings)
         {
             _jwtSettings = jwtSettings.Value;
-            Constr = "User ID=postgres;Password=password;Server=localhost;Port=5433;Database=postgres;Integrated Security=true;Pooling=true; ";
+            Constr = "User ID=ApiConnection;Password=password;Server=localhost;Port=5432;Database=ReportApp;Integrated Security=true;Pooling=true; ";
+            System.Diagnostics.Debug.WriteLine("Report controller init");
         }
 
         [HttpGet]
@@ -39,7 +40,7 @@ namespace ReportApi.Controllers
 
 
                     var reportList = new List<Report>();
-                    connection = new NpgsqlConnection(Constr);
+                    var connection = new NpgsqlConnection(Constr);
 
                     connection.Open();
 
@@ -78,7 +79,7 @@ namespace ReportApi.Controllers
                 else if(HttpContext.User.IsInRole("admin"))
                 {
                     var reportList = new List<Report>();
-                    connection = new NpgsqlConnection(Constr);
+                    var connection = new NpgsqlConnection(Constr);
 
                     connection.Open();
 
@@ -130,7 +131,7 @@ namespace ReportApi.Controllers
         {
             try
             {
-                connection = new NpgsqlConnection(Constr);
+                var connection = new NpgsqlConnection(Constr);
 
                 connection.Open();
 
@@ -155,27 +156,33 @@ namespace ReportApi.Controllers
             }
         }
 
+
+
         [HttpPost]
         [Route("ChangeStatus")]
-        [Authorize(Roles = "RoleAdmin")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> ChangeStatus(Report report)
         {
             try {
 
-                connection = new NpgsqlConnection(Constr);
-                connection.Open();
+                using (var connection = new NpgsqlConnection(Constr))
+                {
+                    connection.Open();
 
-                string query = "update reports set reportstatus=@newStatus where id=@id";
+                    string query = "update reports set reportstatus=@newStatus where id=@id returning id";
 
-                NpgsqlCommand command = new NpgsqlCommand(query, connection);
-                command.Parameters.AddWithValue("@id", report.Id);
-                command.Parameters.AddWithValue("@status", report.status);
+                    using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@id", report.Id);
+                        command.Parameters.AddWithValue("@newStatus", report.status);
 
-                object rid = await command.ExecuteScalarAsync();
+                        object rid = await command.ExecuteScalarAsync();
 
-                report = rid as Report;
 
-                return Ok(report);
+
+                        return Ok(Convert.ToInt16(rid));
+                    }
+                }
             }catch (Exception ex) { 
                 
                 return BadRequest(ex.Message);

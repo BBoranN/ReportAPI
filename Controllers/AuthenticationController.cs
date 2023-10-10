@@ -21,7 +21,7 @@ namespace ReportApi.Controllers
         public AuthenticationController(IOptions<JwtSettings> jwtSettings)
         {
             _jwtSettings = jwtSettings.Value;
-            Constr = "User ID=postgres;Password=password;Server=localhost;Port=5433;Database=postgres;Integrated Security=true;Pooling=true; ";
+            Constr = "User ID=ApiConnection;Password=password;Server=localhost;Port=5432;Database=ReportApp;Integrated Security=true;Pooling=true; ";
         }
 
         [HttpPost("Login")]
