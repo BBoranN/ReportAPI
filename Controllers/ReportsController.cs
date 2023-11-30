@@ -20,7 +20,8 @@ namespace ReportApi.Controllers
         public ReportsController(IOptions<JwtSettings> jwtSettings)
         {
             _jwtSettings = jwtSettings.Value;
-            Constr = "User ID=ApiConnection;Password=password;Server=localhost;Port=5432;Database=ReportApp;Integrated Security=true;Pooling=true; ";
+            Constr = DatabaseConfig.databaseConnectionString;
+
             System.Diagnostics.Debug.WriteLine("Report controller init");
         }
 
